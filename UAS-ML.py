@@ -106,7 +106,8 @@ for scenario in range(1, 3):
         sampler = SMOTE(random_state=42)
         sampler_name = "SMOTE"
 
-    X_resampled, y_resampled = sampler.fit_resample(X, y)
+    # Use X_selected instead of X for resampling
+    X_resampled, y_resampled = sampler.fit_resample(X_selected, y)
 
     # Cek distribusi sebelum dan sesudah sampling
     print(f"Distribusi Sebelum {sampler_name}:\n")
@@ -222,47 +223,50 @@ def get_input_features(scaler):
     print("         INPUT DATA PASIEN UNTUK KLASIFIKASI         ")
     print("=".center(60, "="))
 
-    # Umur
-    while True:
-        try:
-            A = int(input("Umur Pasien (1-99) = "))
-            if 1 <= A <= 99:
-                if A < 21: A_k = 1
-                elif A < 31: A_k = 2
-                elif A < 41: A_k = 3
-                elif A < 51: A_k = 4
-                else: A_k = 5
-                break
-            else:
-                print("Harap masukkan angka antara 1 sampai 99.")
-        except ValueError:
-            print("Input tidak valid. Masukkan angka.")
-
-    # Jenis Kelamin
-    while True:
-        try:
-            B_k = int(input("Jenis Kelamin (0=Perempuan, 1=Laki-Laki) = "))
-            if B_k in [0, 1]:
-                break
-            else:
-                print("Harap masukkan 0 atau 1.")
-        except ValueError:
-            print("Input tidak valid.")
-
-    # Gejala-gejala C - M
-    symptoms = []
-    for gejala in "CDEFGHIJKLM":
-        while True:
-            res = input(f"Apakah pasien mengalami {gejala}? (Y/N) = ").strip().upper()
-            if res in ['Y', 'N']:
-                symptoms.append(1 if res == 'Y' else 0)
-                break
-            else:
-                print("Masukkan tidak valid. Harap Y atau N.")
+    # Prompt for each selected feature in order
+    input_values = []
+    for feature in selected_features:
+        if feature.lower() in ["a", "umur", "umur_tahun"]:
+            # Age encoding
+            while True:
+                try:
+                    age = int(input("Umur Pasien (1-99) = "))
+                    if 1 <= age <= 99:
+                        if age < 21: age_k = 1
+                        elif age < 31: age_k = 2
+                        elif age < 41: age_k = 3
+                        elif age < 51: age_k = 4
+                        else: age_k = 5
+                        input_values.append(age_k)
+                        break
+                    else:
+                        print("Harap masukkan angka antara 1 sampai 99.")
+                except ValueError:
+                    print("Input tidak valid. Masukkan angka.")
+        elif feature.lower() in ["b", "jenis_kelamin"]:
+            # Gender encoding
+            while True:
+                try:
+                    gender = int(input("Jenis Kelamin (0=Perempuan, 1=Laki-Laki) = "))
+                    if gender in [0, 1]:
+                        input_values.append(gender)
+                        break
+                    else:
+                        print("Harap masukkan 0 atau 1.")
+                except ValueError:
+                    print("Input tidak valid.")
+        else:
+            # Assume binary symptom (Y/N)
+            while True:
+                res = input(f"Apakah pasien mengalami {feature}? (Y/N) = ").strip().upper()
+                if res in ['Y', 'N']:
+                    input_values.append(1 if res == 'Y' else 0)
+                    break
+                else:
+                    print("Masukkan tidak valid. Harap Y atau N.")
 
     # Final vector
-    feature_list = [A_k, B_k] + symptoms
-    test_df = pd.DataFrame([feature_list])
+    test_df = pd.DataFrame([input_values], columns=selected_features)
 
     # Scale the input
     test_scaled = scaler.transform(test_df)
